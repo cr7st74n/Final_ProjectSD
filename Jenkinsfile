@@ -23,10 +23,21 @@ pipeline {
         }
 
         stage('Build JAR with Maven') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
+    steps {
+        sh '''
+          echo ">>> Installing Maven inside Jenkins container..."
+          apt-get update
+          apt-get install -y maven
+
+          echo ">>> Maven version:"
+          mvn -version
+
+          echo ">>> Building JAR..."
+          mvn clean package -DskipTests
+        '''
+    }
+}
+
 
         stage('Upload JAR to Nexus') {
             steps {
