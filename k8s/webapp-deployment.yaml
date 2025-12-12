@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp
+        image: demo-webapp:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        # Override Spring Boot datasource to use the MySQL service in the cluster
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:mysql://mysql-service:3306/mydb
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: MYSQL_USER
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: MYSQL_PASSWORD
+
