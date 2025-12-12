@@ -2,15 +2,14 @@ pipeline {
     agent any
 
     environment {
-        // Git repo with your Spring Boot project
+        // Your GitHub repo
         GIT_REPO_URL = 'https://github.com/cr7st74n/Final_ProjectSD.git'
 
-        // Nexus inside the cluster
+        // Nexus inside Kubernetes
         NEXUS_URL  = 'http://nexus-service:8081'
-        NEXUS_REPO = 'maven-releases'   // or the repo name you created in Nexus
+        NEXUS_REPO = 'maven-releases'   // make sure this repo exists in Nexus
 
-        // For homework you can hardcode admin creds.
-        // In real life: use Jenkins credentials.
+        // For homework you can hardcode. In real life, use Jenkins credentials.
         NEXUS_USER = 'admin'
         NEXUS_PASS = '1214'
     }
@@ -22,41 +21,31 @@ pipeline {
             }
         }
 
-        stage('Build JAR with Maven') {
-    steps {
-        sh '''
-          echo ">>> Installing Maven inside Jenkins container..."
-          apt-get update
-          apt-get install -y maven
-
-          echo ">>> Maven version:"
-          mvn -version
-
-          echo ">>> Building JAR..."
-          mvn clean package -DskipTests
-        '''
-    }
-}
-
+        stage('Build JAR with Maven Wrapper') {
+            steps {
+                sh '''
+                  echo ">>> Using Maven Wrapper to build the JAR..."
+                  chmod +x mvnw
+                  ./mvnw clean package -DskipTests
+                '''
+            }
+        }
 
         stage('Upload JAR to Nexus') {
             steps {
                 script {
-                    // Find the JAR that was built
-            		def jarFile = sh(
-                	script: "ls target/*.jar | head -n 1",
-                	returnStdout: true
-            		).trim()
+                    def jarFile = sh(
+                        script: "ls target/*.jar | head -n 1",
+                        returnStdout: true
+                    ).trim()
 
-            		// Extract just the filename (no path)
-            		def fileName = jarFile.tokenize('/').last()
+                    def fileName = jarFile.tokenize('/').last()
+                    echo "Uploading ${jarFile} to Nexus as ${fileName}..."
 
-            		echo "Uploading ${jarFile} to Nexus as ${fileName}..."
-
-            		sh """
-              		curl -v -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file ${jarFile} \
-                	${NEXUS_URL}/repository/${NEXUS_REPO}/${fileName}
-            		"""
+                    sh """
+                      curl -v -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file ${jarFile} \
+                        ${NEXUS_URL}/repository/${NEXUS_REPO}/${fileName}
+                    """
                 }
             }
         }
