@@ -32,17 +32,20 @@ pipeline {
             steps {
                 script {
                     // Find the JAR that was built
-                    def jarFile = sh(
-                        script: "ls target/*.jar | head -n 1",
-                        returnStdout: true
-                    ).trim()
+            		def jarFile = sh(
+                	script: "ls target/*.jar | head -n 1",
+                	returnStdout: true
+            		).trim()
 
-                    echo "Uploading ${jarFile} to Nexus..."
+            		// Extract just the filename (no path)
+            		def fileName = jarFile.tokenize('/').last()
 
-                    sh """
-                    curl -v -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file ${jarFile} \
-                      ${NEXUS_URL}/repository/${NEXUS_REPO}/$(basename ${jarFile})
-                    """
+            		echo "Uploading ${jarFile} to Nexus as ${fileName}..."
+
+            		sh """
+              		curl -v -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file ${jarFile} \
+                	${NEXUS_URL}/repository/${NEXUS_REPO}/${fileName}
+            		"""
                 }
             }
         }
